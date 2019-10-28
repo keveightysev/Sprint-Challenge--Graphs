@@ -19,9 +19,85 @@ world.loadGraph(roomGraph)
 world.printRooms()
 player = Player("Name", world.startingRoom)
 
+class Queue():
+    def __init__(self):
+        self.queue = []
+    def enqueue(self, value):
+        self.queue.append(value)
+    def dequeue(self):
+        if self.size() > 0:
+            return self.queue.pop(0)
+        else:
+            return None
+    def size(self):
+        return len(self.queue)
 
-# FILL THIS IN
-traversalPath = ['n', 's']
+class Graph:
+    def __init__(self):
+        self.vertices = {}
+
+    def add_vertex(self, vertex):
+        self.vertices[vertex] = set()
+
+    def opposite_direction(self, direction):
+        exits = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e'}
+        return exits[direction]
+
+    def bfs(self, start):
+        queue = Queue()
+        queue.enqueue([start])
+        visited = set() 
+        
+        while queue.size() > 0:
+            path = queue.dequeue()
+            vertex = path[-1]
+            if vertex not in visited:
+                visited.add(vertex)
+
+                for neighbor in self.vertices[vertex]:
+                    if self.vertices[vertex][neighbor] == '?':
+                        return path
+
+                for direction in self.vertices[vertex]:
+                    neighbor_room = self.vertices[vertex][direction]
+                    new_path = path.copy()
+                    new_path.append(neighbor_room)
+                    queue.enqueue(new_path)
+        return None
+
+
+traversalPath = []
+visited = set()
+graph = Graph()
+
+while len(graph.vertices) < len(roomGraph):
+    current_room = player.currentRoom.id
+    if current_room not in graph.vertices:
+        graph.add_vertex(current_room)
+        graph.vertices[current_room] = {i: '?' for i in player.currentRoom.getExits()}
+    room_exit = None
+    for direction in graph.vertices[current_room]:
+        if graph.vertices[current_room][direction] == '?':
+            room_exit = direction
+            if room_exit is not None:
+                traversalPath.append(room_exit)
+                player.travel(room_exit)
+                if player.currentRoom.id not in graph.vertices:
+                    graph.add_vertex(player.currentRoom.id)
+                    graph.vertices[player.currentRoom.id] = { i: '?' for i in player.currentRoom.getExits()}
+            graph.vertices[current_room][room_exit] = player.currentRoom.id
+            graph.vertices[player.currentRoom.id][graph.opposite_direction(room_exit)] = current_room
+            current_room = player.currentRoom.id   
+            break
+    rooms = graph.bfs(player.currentRoom.id)
+    if rooms is not None:
+        for room in rooms:
+            for direction in graph.vertices[current_room]:
+                if graph.vertices[current_room][direction] == room:
+                    traversalPath.append(direction)
+                    player.travel(direction)
+
+            current_room = player.currentRoom.id
 
 
 # TRAVERSAL TEST
